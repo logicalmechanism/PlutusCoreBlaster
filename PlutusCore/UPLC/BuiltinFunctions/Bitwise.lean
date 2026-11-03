@@ -71,11 +71,21 @@ def orByteString (Vs : List CekValue) : Option CekValue :=
       some (.VCon (.ByteString ⟨PLC.orByteString e op1.data op2.data⟩))
   | _ => none
 
+/-- Opaque alias of `xorByteString`, used only by the XorByteString builtin.
+    Declared `opaque` so symbolic tools (e.g. Blaster) treat it as an uninterpreted
+    function of its arguments instead of unfolding `byteStringOp`, which slices the
+    longer string (`String.dropRight`) and maps each `Char` through `UInt8`, neither of
+    which they can translate over a symbolic bytestring. Compiled evaluation (CEK
+    execution, `native_decide`, conformance tests) is unchanged: the provided value IS
+    `xorByteString`, and `PlutusCore.Bitwise.xorByteString` itself stays a plain def for
+    direct use and proofs. -/
+opaque xorByteStringOpaque (e : Bool) (b c : String) : String := PLC.xorByteString e b c
+
 -- Define xorByteString: args reversed as [op2, op1, e]
 def xorByteString (Vs : List CekValue) : Option CekValue :=
   match Vs with
   | [.VCon (.ByteString op2), .VCon (.ByteString op1), .VCon (.Bool e)] =>
-      some (.VCon (.ByteString ⟨PLC.xorByteString e op1.data op2.data⟩))
+      some (.VCon (.ByteString ⟨xorByteStringOpaque e op1.data op2.data⟩))
   | _ => none
 
 -- Define complementByteString
