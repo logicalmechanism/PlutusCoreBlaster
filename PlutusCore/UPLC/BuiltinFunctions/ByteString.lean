@@ -48,11 +48,22 @@ def consByteString (semanticsVersion : PLC.BuiltinSemanticsVariant) (Vs : List C
        | _ => some (CekValue.VCon (Const.ByteString (PLC.consByteStringV1 x bs)))
   | _ => none
 
+/-- Opaque alias of `sliceByteString`, used only by the SliceByteString builtin.
+    Declared `opaque` so symbolic tools (e.g. Blaster) treat it as an uninterpreted
+    function of its arguments instead of unfolding `sliceByteString`, which takes and
+    drops on the bytestring's `List Char` and so reaches `Char`'s `BitVec`, which they
+    can't translate over a symbolic bytestring. Compiled evaluation (CEK execution,
+    `native_decide`, conformance tests) is unchanged: the provided value IS
+    `sliceByteString`, and `PlutusCore.ByteString.sliceByteString` itself stays a plain
+    def for direct use and proofs. -/
+opaque sliceByteStringOpaque (s k : Int) (bs : String) : String :=
+  (PLC.sliceByteString s k ⟨bs⟩).data
+
 -- Define sliceByteString
 def sliceByteString (Vs : List CekValue) : Option CekValue :=
   match Vs with
   | [CekValue.VCon (Const.ByteString bs), CekValue.VCon (Const.Integer k), CekValue.VCon (Const.Integer s)] =>
-      some (CekValue.VCon (Const.ByteString (PLC.sliceByteString s k bs)))
+      some (CekValue.VCon (Const.ByteString ⟨sliceByteStringOpaque s k bs.data⟩))
   | _ => none
 
 -- Define lengthOfByteString
